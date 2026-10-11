@@ -1,6 +1,10 @@
 # Panduan Migration SIRAT
 
-Jalankan command ini **satu per satu** di terminal, di dalam folder project (`rt02-sirat`). Urutannya penting karena ada foreign key yang saling bergantung.
+> **PENTING (Arsitektur Multi-Repo):**
+> Seluruh migrasi database **HANYA dikelola dan dijalankan di dalam repository Backend (`rt02-sirat-backend`)**.
+> Repository Frontend (`rt02-sirat-frontend`) dilarang menjalankan `php artisan migrate:fresh` karena skema database `rt02-db` dikelola terpusat dari Backend.
+
+Jalankan command ini **satu per satu** di terminal, di dalam folder project backend (`rt02-sirat` / `rt02-sirat-backend`). Urutannya penting karena ada foreign key yang saling bergantung.
 
 ---
 

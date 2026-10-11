@@ -80,18 +80,20 @@ Blok → Rumah → Kartu Keluarga → Anggota Keluarga
 
 ## 5. Batasan (Constraints)
 
-### 5.1 Tech Stack
-| Komponen | Teknologi |
-|---|---|
-| Backend | Laravel |
-| Frontend (template) | Blade |
-| Build tool | Vite |
-| Admin panel | Filament |
-| Auth Warga | Laravel Breeze (terpisah dari login Filament Admin) |
-| Database | MySQL |
-| CSS | Tailwind (shared config antara Filament & sisi Warga) |
-| Export Excel | Maatwebsite/Laravel-Excel |
-| Upload file/foto | Laravel Storage (bawaan) |
+### 5.1 Tech Stack & Repositories
+
+Aplikasi diorganisir menggunakan arsitektur **Multi-Repo dengan Shared Database**:
+
+| Komponen | Teknologi | Repository | Keterangan |
+|---|---|---|---|
+| **Backend & Admin** | Laravel 12 + Filament v5 | [`rt02-sirat-backend`](https://github.com/Ikhsyann/rt02-sirat-backend) | Admin Panel pengurus RT, single source of truth skema & migrasi DB |
+| **Frontend & Publik** | Laravel 12 + Blade + Breeze | [`rt02-sirat-frontend`](https://github.com/Ikhsyann/rt02-sirat-frontend) | Portal Warga, Beranda publik, dokumentasi kegiatan, detail artikel |
+| **Admin Panel** | Filament v5 | Di Backend (`/admin`) | CRUD otomatis untuk pengurus RT |
+| **Auth Warga** | Laravel Breeze | Di Frontend (`/login`) | Login warga terhubung 1-to-1 ke data Anggota Keluarga |
+| **Database** | MySQL 8.0 (`rt02-db`) | Bersama (Shared) | Kedua repo membaca & menulis ke basis data yang sama |
+| **CSS / Styling** | Tailwind CSS + Vite | Di Frontend & Backend | Desain responsif (mobile-first) |
+| **Export Excel** | Maatwebsite/Laravel-Excel | Di Backend | Export laporan keuangan RT |
+| **Upload File** | Laravel Storage | Di Backend & Frontend | Foto KK & dokumentasi kegiatan warga |
 
 ### 5.2 Deployment
 - Wajib deploy publik (ketentuan program pengembangan desa)
@@ -253,19 +255,43 @@ erDiagram
 
 ## 9. Arsitektur Sistem
 
-![Arsitektur Sistem SIRAT](wireframes/arsitektur_sistem.png)
+SIRAT menggunakan arsitektur **Multi-Repo dengan Shared Database** (mengadopsi pola pemisahan *back-door* dan *front-door* seperti pada repo referensi kepanitiaan):
 
-SIRAT menggunakan arsitektur **monolith** (bukan pisah frontend-backend/API) — konsekuensi langsung dari pemilihan Laravel + Blade + Filament.
+```
+                        ┌──────────────────────────────┐
+                        │   MySQL Database (rt02-db)   │
+                        │   (Single Source of Truth)   │
+                        └──────────────┬───────────────┘
+                                       │
+                    ┌──────────────────┴──────────────────┐
+                    ▼                                     ▼
+        ┌─────────────────────────┐           ┌─────────────────────────┐
+        │  Repo 1: BACKEND        │           │  Repo 2: FRONTEND       │
+        │  (rt02-sirat-backend)   │           │  (rt02-sirat-frontend)  │
+        ├─────────────────────────┤           ├─────────────────────────┤
+        │ • Laravel 12 + Filament │           │ • Laravel 12 + Blade    │
+        │ • Admin Panel (/admin)  │           │ • Auth Warga (Breeze)   │
+        │ • Pemilik Migrasi & DB  │           │ • Beranda Publik (/)    │
+        │ • Port: 8000            │           │ • Port: 8001            │
+        └─────────────────────────┘           └─────────────────────────┘
+```
 
-**Alur:**
-1. **Browser (Klien)** — Warga, Admin, atau publik mengakses SIRAT lewat browser, mengirim HTTP request.
-2. **Jagoan Hosting (Server)** — seluruh aplikasi berjalan dalam satu server:
-   - **Blade Views** — merender halaman Publik (Beranda) & Warga (Beranda Warga, Layanan)
-   - **Filament** — panel Admin dengan CRUD otomatis
-   - **Laravel Breeze** — sistem autentikasi terpisah untuk Warga
-   - **Filament Auth** — sistem autentikasi bawaan Filament untuk Admin
-3. **MySQL Database** — tempat penyimpanan seluruh data (Blok, Rumah, Kartu Keluarga, Keuangan, Kegiatan, dll), berjalan di server yang sama.
-4. **Vite** — bukan bagian yang berjalan saat aplikasi live; hanya digunakan sebelum deploy untuk meng-compile Tailwind CSS & JS menjadi file statis yang dimuat oleh Blade Views.
+**Alur & Pembagian Tanggung Jawab:**
+1. **Browser (Klien)**:
+   - Pengurus RT mengakses: `http://domain-admin/admin` (Repo Backend).
+   - Warga & Masyarakat Umum mengakses: `http://domain-utama/` dan `/login` (Repo Frontend).
+2. **Repository Backend (`rt02-sirat-backend`)**:
+   - Menjalankan Filament v5 Admin Panel dengan CRUD lengkap.
+   - Mengelola **seluruh migrasi tabel dan data seeder** (Database Single Source of Truth).
+   - Menjalankan export laporan keuangan ke Excel.
+3. **Repository Frontend (`rt02-sirat-frontend`)**:
+   - Menjalankan Blade Views untuk halaman publik (Beranda carousel kegiatan & berita) dan halaman portal warga (Dashboard, Layanan Data Keluarga, Keuangan, Kontak Darurat).
+   - Menjalankan sistem autentikasi warga via Laravel Breeze yang membaca tabel `users` pada database bersama.
+   - Menggunakan model-model Eloquent yang diselaraskan dengan skema database backend.
+4. **MySQL Database (`rt02-db`)**:
+   - Basis data bersama di server/hosting yang sama, diakses oleh kedua aplikasi Laravel.
+5. **Vite**:
+   - Digunakan di masing-masing repo untuk meng-compile asset CSS (Tailwind) & JavaScript ke folder `public/build/`.
 
 ---
 

@@ -1,5 +1,9 @@
 # Panduan Model & Seeder SIRAT
 
+> **PENTING (Arsitektur Multi-Repo):**
+> - **Model (Bagian 1)**: Wajib disinkronkan dan berada di folder `app/Models/` pada **KEDUA repository** (`rt02-sirat-backend` dan `rt02-sirat-frontend`) agar kedua aplikasi dapat melakukan query ke tabel-tabel yang sama.
+> - **Seeder (Bagian 2)**: **HANYA dijalankan di repository Backend (`rt02-sirat-backend`)**.
+
 ## Bagian 1: Model + Relasi
 
 Generate semua model dulu (tanpa `-m` karena migration udah ada):
